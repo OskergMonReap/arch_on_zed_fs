@@ -221,7 +221,7 @@ Create `/etc/initcpio/hooks/load_part`:
 # /etc/initcpio/hooks/load_part:
 #------------------------------
 run_hook() {
-        partprobe /dev/mapper/cryptoroot
+        partprobe /dev/mapper/cryptroot
 }
 ```
 Edit `/etc/mkinitcpio.conf`, edit line with `HOOKS=` to match:
@@ -247,7 +247,7 @@ With that info we can now edit `/boot/refind_linux.conf`:
 ```
 # /boot/refind_linux.conf:
 #-------------------------
-"Boot with defaults" "cryptdevice=/dev/disk/by-uuid/<uuid>:cryptoroot zfs=zroot/ROOT/default rw resume=UUID=<swap UUID>"
+"Boot with defaults" "cryptdevice=/dev/disk/by-uuid/<uuid>:cryptroot zfs=zroot/ROOT/default rw resume=UUID=<swap UUID>"
 ```
 
 Set `/etc/hostname` and `/etc/hosts`
