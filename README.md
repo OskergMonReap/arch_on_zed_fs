@@ -54,7 +54,7 @@ Build
     - list any packages you want installed here
 - `pacman.conf`
     - the package manager configuration file
-    - list additional repo's here`
+    - list additional repo's here
 
 #### Customizations
 Add ZFS repository to the `pacman.conf` file, above all other repo's add `[archzfs]`:
@@ -85,7 +85,7 @@ This will build the image and automatically place it in the `out/` directory we 
 - - -
 ## PART 2
 ### The Installation
-#### Partitiong, Encrypting and Partitioning (again).. Oh My!
+#### Partitiong, Encrypting and Partitioning (again)..
 Assuming all went well in creating our custom ISO, boot into the image and get networking up (if no ethernet, `wifi-menu` it up), then lets partition that disk:
 ```
 parted /dev/sda
@@ -174,7 +174,7 @@ hwclock -w
 ```
 PACKAGE FREE FOR ALL!!!!! Meaning, just install w/e else you want here:
 ```
-pacman -S rsync terminator iw dialog wpa_supplicant ....
+pacman -S rsync terminator iw dialog wpa_supplicant i3 volumeicon copyq py3status ....
 ```
 
 #### Finishing Touches
