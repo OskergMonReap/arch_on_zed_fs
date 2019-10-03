@@ -2,8 +2,8 @@
 Living document outlining base installation for home/work PCs, encrypted with `/` on ZFS
 - - -
 **TO-DO**:
--*refactor into bash script for automation*
--*implement CI/CD to pre-build Arch ISO, serve from S3*
+- *refactor into bash script for automation*
+- *implement CI/CD to pre-build Arch ISO, serve from S3*
 - - -
 ### PART 1
 #### Bake our own ISO with ZFS in tow
