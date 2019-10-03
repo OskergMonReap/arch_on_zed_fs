@@ -155,7 +155,109 @@ genfstab -U -p /mnt | grep swap >> /mnt/etc/fstab
 ```
 
 #### Chroot in, wrap up install
+First, chroot on in so we can interact with our new system:
 ```
 arch-chroot /mnt /bin/bash
 ```
+First, setup locale by uncommenting UTF-8 US option in `/etc/locale.gen` then run
+```
+locale-gen
+```
+Now lets take care of several other initial setup tasks:
+```
+echo LANG=en_US.UTF-8 > /etc/locale.conf
+ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
+hwclock --systohc --utc
+pacman -S ntp
+ntpd -q
+hwclock -w
+```
+PACKAGE FREE FOR ALL!!!!! Meaning, just install w/e else you want here:
+```
+pacman -S rsync terminator iw dialog wpa_supplicant ....
+```
 
+#### Finishing Touches
+Edit `/etc/pacman.conf` and place `[archzfs]` above other repos:
+```
+[archzfs]
+Server = http://archzfs.com/$repo/x86_64
+```
+Both the db and packages are signed, so add key to pacman's trusted key list:
+```
+pacman-key -r F75D9D76
+pacman-key --lsign-key F75D9D76
+pacman -Syyu
+```
+Install and enable ZFS:
+```
+pacman -S zfs-linux parted
+systemctl enable zfs.target
+systemctl enable zfs-import-cache
+systemctl enable zfs-mount
+systemctl enable zfs-import.target
+```
+#### Bootup hook for ZFS:
+Create `/etc/initcpio/install/load_part`:
+```
+# /etc/initcpio/install/load_part:
+#---------------------------------
+#!/bin/bash
+
+build() {
+        add_binary 'partprobe'
+
+        add_runscript
+}
+
+help() {
+        cat <<HELPEOF
+Probes mapped LUKS container for partitions.
+HELPEOF
+}
+```
+Create `/etc/initcpio/hooks/load_part`:
+```
+# /etc/initcpio/hooks/load_part:
+#------------------------------
+run_hook() {
+        partprobe /dev/mapper/cryptoroot
+}
+```
+Edit `/etc/mkinitcpio.conf`, edit line with `HOOKS=` to match:
+```
+HOOKS="base udev autodetect modconf block keyboard encrypt load_part resume zfs filesystems"
+```
+Create boot image:
+```
+mkinitcpio -p linux
+```
+
+#### Home Stretch
+For bootloader, rEFInd will be used:
+```
+pacman -S refind-efi
+refind-install
+```
+Now, for this next part.. we'll need to gather some info..
+1. `blkid /dev/sda2` grab `UUID` for cryptdevice
+2. `blkid /dev/mapper/cryptroot1` grab `UUID` for resume
+
+With that info we can now edit `/boot/refind_linux.conf`:
+```
+# /boot/refind_linux.conf:
+#-------------------------
+"Boot with defaults" "cryptdevice=/dev/disk/by-uuid/<uuid>:cryptoroot zfs=zroot/ROOT/default rw resume=UUID=<swap UUID>"
+```
+
+Set `/etc/hostname` and `/etc/hosts`
+
+Set root password:
+```
+passwd
+```
+Copy zpool, unmount and export!
+```
+umount /mnt/boot
+zpool export zroot
+```
