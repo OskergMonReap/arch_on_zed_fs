@@ -1,10 +1,10 @@
 # Arch Linux install on ZFS
 Living document outlining base installation for home/work PCs, encrypted with `/` on ZFS
-
+- - -
 **TO-DO**:
 -*refactor into bash script for automation*
 -*implement CI/CD to pre-build Arch ISO, serve from S3*
-
+- - -
 ### PART 1
 #### Bake our own ISO with ZFS in tow
 From our existing Arch system, we'll start by pulling down the `archiso` package.
