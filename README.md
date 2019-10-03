@@ -82,4 +82,80 @@ mkdir out
 ```
 This will build the image and automatically place it in the `out/` directory we just created!
 
+- - -
+## PART 2
+### The Installation
+#### Partitiong, Encrypting and Partitioning (again).. Oh My!
+Assuming all went well in creating our custom ISO, boot into the image and get networking up (if no ethernet, `wifi-menu` it up), then lets partition that disk:
+```
+parted /dev/sda
+(parted) mklabel gpt
+(parted) mkpart ESP fat32 1MiB 513MiB
+(parted) set 1 boot on
+(parted) mkpart primary ext2 513MiB 99%
+(parted) align-check optimal 1
+(parted) align-check optimal 2
+```
+Now, format EFI partition we just created:
+```
+mkfs.fat -F32 /dev/sda1
+```
+LUK'in those crypts:
+```
+cryptsetup luksFormat /dev/sda2
+cryptsetup luksOpen /dev/sda2 cryptroot
+```
+With our luks encrypted partition open, lets repartition for our system on ZFS:
+```
+parted /dev/mapper/cryptroot
+(parted) mklabel gpt
+(parted) mkpart ext2 0% 512MiB
+(parted) mkpart ext2 512MiB 100%
+```
+If we're working on a laptop, lets make swap (size of RAM at least) for hibernation purposes:
+```
+mkswap /dev/mapper/cryptroot1
+swapon /dev/mapper/cryptroot1
+```
+
+#### Setting up ZFS
+Create the `zpool.cache` file:
+```
+touch /etc/zfs/zpool.cache
+```
+Create the pool:
+```
+zpool create -o cachefile=/etc/zfs/zpool.cache -m none -R /mnt zroot /dev/mapper/cryptroot2
+```
+Now we can create the ZFS filesystems in the new pool:
+```
+zfs create -o mountpoint=none -o compression=lz4 zroot/ROOT
+zfs create -o mountpoint=/ zroot/ROOT/default
+zfs create -o mountpoint=/opt zroot/opt
+zfs create -o mountpoint=/home zroot/home
+zfs create -o mountpoint=/root zroot/home/root
+zpool set bootfs=zroot zroot
+```
+Export/import dance:
+```
+zpool export zroot
+zpool import -R /mnt zroot
+```
+
+Now, run `blkid /dev/sda1` and grab the `UUID` for below mount command:
+```
+mkdir /mnt/boot
+mount /dev/disk/by-uuid/${UUID} /mnt/boot
+```
+Install base system and generate fstab entries:
+```
+pacstrap -i /mnt base base-devel vim
+genfstab -U -p /mnt | grep boot >> /mnt/etc/fstab
+genfstab -U -p /mnt | grep swap >> /mnt/etc/fstab
+```
+
+#### Chroot in, wrap up install
+```
+arch-chroot /mnt /bin/bash
+```
 
