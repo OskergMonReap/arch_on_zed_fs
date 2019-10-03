@@ -258,6 +258,7 @@ passwd
 ```
 Copy zpool, unmount and export!
 ```
+cp /etc/zfs/zpool.cache /mnt/etc/zfs
 umount /mnt/boot
 zpool export zroot
 ```
