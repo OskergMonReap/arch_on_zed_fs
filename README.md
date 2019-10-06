@@ -85,7 +85,7 @@ This will build the image and automatically place it in the `out/` directory we 
 - - -
 ## PART 2
 ### The Installation
-#### Partitiong, Encrypting and Partitioning (again)..
+#### Partitioning, Encrypting and Partitioning (again)..
 Assuming all went well in creating our custom ISO, boot into the image and get networking up (if no ethernet, `wifi-menu` it up), then lets partition that disk:
 ```
 parted /dev/sda
