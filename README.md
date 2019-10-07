@@ -109,8 +109,8 @@ With our luks encrypted partition open, lets repartition for our system on ZFS:
 ```
 parted /dev/mapper/cryptroot
 (parted) mklabel gpt
-(parted) mkpart ext2 0% 512MiB
-(parted) mkpart ext2 512MiB 100%
+(parted) mkpart ext2 0% 8GB
+(parted) mkpart ext2 8GB 100%
 ```
 If we're working on a laptop, lets make swap (size of RAM at least) for hibernation purposes:
 ```
@@ -174,7 +174,7 @@ hwclock -w
 ```
 PACKAGE FREE FOR ALL!!!!! Meaning, just install w/e else you want here:
 ```
-pacman -S rsync terminator iw dialog wpa_supplicant i3 volumeicon copyq py3status ....
+pacman -S rsync terminator iw dialog wpa_supplicant i3 volumeicon copyq py3status lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
 ```
 
 #### Finishing Touches
