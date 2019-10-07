@@ -2,7 +2,7 @@
 Living document outlining base installation for home/work PCs, encrypted with `/` on ZFS
 - - -
 **TO-DO**:
-- *refactor into bash script for automation*
+- *refactor into shell scripts for automation, likely one for zsh shell of live env and one for user customizations after reboot*
 - *implement CI/CD to pre-build Arch ISO, serve from S3*
 - - -
 ### PART 1
