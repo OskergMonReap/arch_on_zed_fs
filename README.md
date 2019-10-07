@@ -65,7 +65,6 @@ Add ZFS repository to the `pacman.conf` file, above all other repo's add `[archz
 [archzfs]
 SigLevel = Optional TrustAll
 Server = http://archzfs.com/$repo/x86_64
-# other repositories...
 ```
 Add ZFS package to bottom of our desired `packages` file, `packages.x86_64` in my case:
 ```
@@ -95,6 +94,7 @@ parted /dev/sda
 (parted) mkpart primary ext2 513MiB 99%
 (parted) align-check optimal 1
 (parted) align-check optimal 2
+(parted) quit
 ```
 Now, format EFI partition we just created:
 ```
@@ -105,21 +105,24 @@ LUK'in those crypts:
 cryptsetup luksFormat /dev/sda2
 cryptsetup luksOpen /dev/sda2 cryptroot
 ```
-With our luks encrypted partition open, lets repartition for our system on ZFS:
+With our luks encrypted partition open, lets repartition for our system on ZFS,
+If on laptop and hibernation is wanted (in this case, yes); then we'll make two
+partitions... first, is 8GB to match my laptops RAM, then rest of disk for our system:
 ```
 parted /dev/mapper/cryptroot
 (parted) mklabel gpt
 (parted) mkpart ext2 0% 8GB
 (parted) mkpart ext2 8GB 100%
+(parted) quit
 ```
-If we're working on a laptop, lets make swap (size of RAM at least) for hibernation purposes:
+Finish setting up first partition as swap:
 ```
 mkswap /dev/mapper/cryptroot1
 swapon /dev/mapper/cryptroot1
 ```
 
 #### Setting up ZFS
-Create the `zpool.cache` file:
+Create the `zpool.cache` file, this resides within the live env:
 ```
 touch /etc/zfs/zpool.cache
 ```
@@ -161,6 +164,7 @@ arch-chroot /mnt /bin/bash
 ```
 First, setup locale by uncommenting UTF-8 US option in `/etc/locale.gen` then run
 ```
+echo en_US.UTF-8 >> /etc/locale.gen
 locale-gen
 ```
 Now lets take care of several other initial setup tasks:
@@ -174,11 +178,11 @@ hwclock -w
 ```
 PACKAGE FREE FOR ALL!!!!! Meaning, just install w/e else you want here:
 ```
-pacman -S rsync terminator iw dialog wpa_supplicant i3 volumeicon copyq py3status lightdm lightdm-gtk-greeter lightdm-gtk-greeter-settings
+pacman -S rsync iw dialog wpa_supplicant dhcp bash-completion wifi-menu reflector
 ```
 
 #### Finishing Touches
-Edit `/etc/pacman.conf` and place `[archzfs]` above other repos:
+Edit `/etc/pacman.conf` and place `[archzfs]` above other repos and uncomment multilib as well:
 ```
 [archzfs]
 Server = http://archzfs.com/$repo/x86_64
@@ -200,8 +204,6 @@ systemctl enable zfs-import.target
 #### Bootup hook for ZFS:
 Create `/etc/initcpio/install/load_part`:
 ```
-# /etc/initcpio/install/load_part:
-#---------------------------------
 #!/bin/bash
 
 build() {
@@ -218,8 +220,6 @@ HELPEOF
 ```
 Create `/etc/initcpio/hooks/load_part`:
 ```
-# /etc/initcpio/hooks/load_part:
-#------------------------------
 run_hook() {
         partprobe /dev/mapper/cryptroot
 }
@@ -250,15 +250,67 @@ With that info we can now edit `/boot/refind_linux.conf`:
 "Boot with defaults" "cryptdevice=/dev/disk/by-uuid/<uuid>:cryptroot zfs=zroot/ROOT/default rw resume=UUID=<swap UUID>"
 ```
 
-Set `/etc/hostname` and `/etc/hosts`
+Set `/etc/hostname` and `/etc/hosts`:
+```
+echo archez > /etc/hostname
+```
+and then enter the following into `/etc/hosts`:
+```
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   archez.reapnet      archez
+```
 
-Set root password:
+Set root password, make networking simple upon next boot:
 ```
 passwd
+pacman -S networkmanager broadcom-wl
+systemctl enable NetworkManager
 ```
-Copy zpool, unmount and export!
+Exit chroot, copy zpool, unmount and export!
 ```
+exit
 cp /etc/zfs/zpool.cache /mnt/etc/zfs
 umount /mnt/boot
 zpool export zroot
+```
+
+#### Reboot! Now its customize to taste (including display server/wm etc)
+Lets create out personal account:
+```
+useradd -m -g users -G audio,video,network,wheel,storage,rfkill,docker -s /bin/bash my_username
+passwd my_username
+```
+Since we want our user to have admin privileges via sudo, we need to run the below command:
+```
+EDITOR=vim visudo
+```
+and uncomment the line with:
+```
+%wheel ALL=(ALL) ALL
+```
+Logout and log backin to test our new account, run `exit` and log backin with user creds
+Test privileges, run `sudo pacman -Syu`, if it worked after entering password we're good here!
+- - -
+#### Gettin Graphical
+Lets install our display server:
+```
+sudo pacman -S xorg-server xorg-apps xorg-xinit xterm x86-video-intel
+```
+I'll be using lightdm as my login manager:
+```
+sudo pacman -S lightdm
+sudo pacman -S lightdm-gtk-greeter lightdm-gtk-greeter-settings
+sudo systemctl enable lightdm.service
+```
+
+Finally, installing my window manager of choice as my desktop environment.. i3.
+Also tacking on several other apps of choice:
+```
+sudo pacman -S i3 lxappearance nitrogen py3status terminator rsync copyq volumeicon git
+
+# Install aur helper
+git clone https://aur.archlinux.org/yay.git
+cd yay
+makepkg -si
 ```
