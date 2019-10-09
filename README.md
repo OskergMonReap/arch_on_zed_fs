@@ -23,7 +23,7 @@ After `cd`'ing into our new build directory, we will see several new files/folde
 
 ```
 Build
-| # Important files and folders:
+|
 ├── airootfs # Make customizations here
 │   ├── etc
 │   │   ├── # configuration files...
@@ -32,12 +32,10 @@ Build
 │       ├── customize_airootfs.sh
 │       └── install.txt
 ├── build.sh # Used to build ISO
-| # Customizable files:
 ├── packages.both
 ├── packages.i686
 ├── packages.x86_64
 ├── pacman.conf
-| # Other files and directories
 ├── mkinitcpio.conf
 ├── efiboot
 │   └── # bootloader files...
@@ -57,7 +55,8 @@ Build
     - list additional repo's here
 
 #### Customizations
-Add ZFS repository to the `pacman.conf` file, above all other repo's add `[archzfs]`:
+Add ZFS repository to the `pacman.conf` file, above all other repo's add `[archzfs]`
+Also, go ahead and uncomment `[multilib]`:
 ```
 #
 # /etc/pacman.conf
@@ -100,16 +99,9 @@ Now, format EFI partition we just created:
 ```
 mkfs.fat -F32 /dev/sda1
 ```
-LUK'in those crypts:
+Now, lets partition for our ZFS pool:
 ```
-cryptsetup luksFormat /dev/sda2
-cryptsetup luksOpen /dev/sda2 cryptroot
-```
-With our luks encrypted partition open, lets repartition for our system on ZFS,
-If on laptop and hibernation is wanted (in this case, yes); then we'll make two
-partitions... first, is 8GB to match my laptops RAM, then rest of disk for our system:
-```
-parted /dev/mapper/cryptroot
+parted /dev/sda2
 (parted) mklabel gpt
 (parted) mkpart ext2 0% 8GB
 (parted) mkpart ext2 8GB 100%
@@ -117,8 +109,8 @@ parted /dev/mapper/cryptroot
 ```
 Finish setting up first partition as swap:
 ```
-mkswap /dev/mapper/cryptroot1
-swapon /dev/mapper/cryptroot1
+mkswap /dev/disk/by-id/<swap-id>
+swapon /dev/disk/by-id/<swap-id>
 ```
 
 #### Setting up ZFS
@@ -128,7 +120,7 @@ touch /etc/zfs/zpool.cache
 ```
 Create the pool:
 ```
-zpool create -o cachefile=/etc/zfs/zpool.cache -m none -R /mnt zroot /dev/mapper/cryptroot2
+zpool create -o encryption=on -o keyformat=passphrase -o keylocation=prompt cachefile=/etc/zfs/zpool.cache -m none -R /mnt zroot /dev/disk/by-id/<id>
 ```
 Now we can create the ZFS filesystems in the new pool:
 ```
@@ -142,7 +134,7 @@ zpool set bootfs=zroot zroot
 Export/import dance:
 ```
 zpool export zroot
-zpool import -R /mnt zroot
+zpool import -R /mnt -l zroot
 ```
 
 Now, run `blkid /dev/sda1` and grab the `UUID` for below mount command:
@@ -176,7 +168,7 @@ pacman -S ntp
 ntpd -q
 hwclock -w
 ```
-PACKAGE FREE FOR ALL!!!!! Meaning, just install w/e else you want here:
+Package collector...
 ```
 pacman -S rsync iw dialog wpa_supplicant dhcp bash-completion wifi-menu reflector
 ```
@@ -195,34 +187,11 @@ pacman -Syyu
 ```
 Install and enable ZFS:
 ```
-pacman -S zfs-linux parted
+pacman -S zfs-linux-lts parted
 systemctl enable zfs.target
 systemctl enable zfs-import-cache
 systemctl enable zfs-mount
 systemctl enable zfs-import.target
-```
-#### Bootup hook for ZFS:
-Create `/etc/initcpio/install/load_part`:
-```
-#!/bin/bash
-
-build() {
-        add_binary 'partprobe'
-
-        add_runscript
-}
-
-help() {
-        cat <<HELPEOF
-Probes mapped LUKS container for partitions.
-HELPEOF
-}
-```
-Create `/etc/initcpio/hooks/load_part`:
-```
-run_hook() {
-        partprobe /dev/mapper/cryptroot
-}
 ```
 Edit `/etc/mkinitcpio.conf`, edit line with `HOOKS=` to match:
 ```
