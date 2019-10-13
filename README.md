@@ -278,7 +278,7 @@ zpool export zroot
 #### Reboot! Now its customize to taste (including display server/wm etc)
 Lets create out personal account:
 ```
-useradd -m -g users -G audio,video,network,wheel,storage,rfkill,docker -s /bin/bash my_username
+useradd -m -g users -G audio,video,network,wheel,storage,rfkill -s /bin/bash my_username
 passwd my_username
 ```
 Since we want our user to have admin privileges via sudo, we need to run the below command:
