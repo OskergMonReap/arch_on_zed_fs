@@ -83,7 +83,7 @@ This will build the image and automatically place it in the `out/` directory we 
 - - -
 ## PART 2
 ### The Installation
-#### Partitioning, Encrypting and Partitioning (again)..
+#### Partitioning, Encrypting
 Assuming all went well in creating our custom ISO, boot into the image and get networking up (if no ethernet, `wifi-menu` it up), then lets partition that disk:
 ```
 parted /dev/sda
@@ -121,32 +121,57 @@ touch /etc/zfs/zpool.cache
 Create the pool:
 ```
 zpool create -o encryption=on -o keyformat=passphrase -o keylocation=prompt cachefile=/etc/zfs/zpool.cache -m none -R /mnt zroot /dev/disk/by-id/<id>
+modprobe zfs
 ```
 Now we can create the ZFS filesystems in the new pool:
 ```
-zfs create -o mountpoint=none -o compression=lz4 zroot/ROOT
-zfs create -o mountpoint=/ zroot/ROOT/default
-zfs create -o mountpoint=/opt zroot/opt
-zfs create -o mountpoint=/home zroot/home
-zfs create -o mountpoint=/root zroot/home/root
-zpool set bootfs=zroot zroot
+SYS_ROOT=zroot
+DATA_ROOT=zroot/data
+zfs set compression=on zroot
+zfs set relatime=on zroot
+zfs create -o mountpoint=none -p ${SYS_ROOT}/ROOT
+zfs create -o mountpoint=/ ${SYS_ROOT}/ROOT/default
+zfs create -o mountpoint=legacy ${SYS_ROOT}/home
+zfs create -o canmount=off -o mountpoint=/var -o xattr=sa ${SYS_ROOT}/var
+zfs create -o canmount=off -o mountpoint=/var/lib ${SYS_ROOT}/var/lib
+zfs create -o canmount=off -o mountponit=/var/lib/systemd ${SYS_ROOT}/var/lib/systemd
+zfs create -o canmount=off -o mountpoint=/usr ${SYS_ROOT}/usr
+SYS_DATASETS='var/lib/systemd/coredump var/log var/log/journal var/lib/docker var/lib/machines var/lib/libvirt var/cache usr/local'
+for ds in ${SYS_DATASETS}; do zfs create -o mountpoint=legacy ${SYS_ROOT}/${ds}; done
+zfs create -o mountpoint=legacy -o acltype=posixacl ${SYS_ROOT}/var/log/journal
+USER_DATASETS='oskr_grme oskr_grme/local oskr_grme/config oskr_grme/cache'
+for ds in ${USER_DATASETS}; do zfs create -o mountpoint=legacy ${SYS_ROOT}/home/${ds}; done
+zfs create -o mountpoint=/home/oskr_grme/.local/share -o canmount=off ${SYS_ROOT}/home/oskr_grme/local/share
+zfs create -o mountpoint=none ${DATA_ROOT}
+DATA_DATASETS='Books Development Pictures Documents Work'
+for ds in ${DATA_DATASETS}; do zfs create -o mountpoint=legacy ${DATA_ROOT}/${ds}; done
+zfs allow oskr_grme create,mount,mountpoint,snapshot ${SYS_ROOT}/home/oskr_grme
+zfs umount -a
 ```
 Export/import dance:
 ```
 zpool export zroot
-zpool import -R /mnt -l zroot
+zpool import -d /dev/disk/by-id -R /mnt -l zroot
+cp /etc/zfs/zpool.cache /mnt/etc/zfs/zpool.cache
 ```
-
-Now, run `blkid /dev/sda1` and grab the `UUID` for below mount command:
+If this cache does not exist, create one:
+```
+zpool set cachefile=/etc/zfs/zpool.cache zroot
+```
+Now, get '/dev/sda1` and grab the `UUID` for below mount command:
 ```
 mkdir /mnt/boot
-mount /dev/disk/by-uuid/${UUID} /mnt/boot
+mount /dev/sda1 /mnt/boot
+mkdir /mnt/home
+mount -t zfs ${SYS_ROOT}/home /mnt/home
+mkdir /mnt/usr/local
+mount -t zfs ${SYS_ROOT}/usr/local /mnt/usr/local
+...repeat for all datasets
 ```
 Install base system and generate fstab entries:
 ```
+genfstab -U -p /mnt >> /mnt/etc/fstab
 pacstrap -i /mnt base base-devel vim
-genfstab -U -p /mnt | grep boot >> /mnt/etc/fstab
-genfstab -U -p /mnt | grep swap >> /mnt/etc/fstab
 ```
 
 #### Chroot in, wrap up install
@@ -187,7 +212,7 @@ pacman -Syyu
 ```
 Install and enable ZFS:
 ```
-pacman -S zfs-linux-lts parted
+pacman -S zfs-linux parted
 systemctl enable zfs.target
 systemctl enable zfs-import-cache
 systemctl enable zfs-mount
@@ -195,7 +220,7 @@ systemctl enable zfs-import.target
 ```
 Edit `/etc/mkinitcpio.conf`, edit line with `HOOKS=` to match:
 ```
-HOOKS="base udev autodetect modconf block keyboard encrypt load_part resume zfs filesystems"
+HOOKS="base udev autodetect modconf block keyboard zfs usr filesystems shutdown"
 ```
 Create boot image:
 ```
@@ -203,20 +228,16 @@ mkinitcpio -p linux
 ```
 
 #### Home Stretch
-For bootloader, rEFInd will be used:
+For bootloader, systemd-boot will be used:
 ```
-pacman -S refind-efi
-refind-install
+bootctl --path=/boot install
 ```
-Now, for this next part.. we'll need to gather some info..
-1. `blkid /dev/sda2` grab `UUID` for cryptdevice
-2. `blkid /dev/mapper/cryptroot1` grab `UUID` for resume
-
-With that info we can now edit `/boot/refind_linux.conf`:
+Now, the bootloader entry, `vim /boot/loader/entries/arch.conf` with the following:
 ```
-# /boot/refind_linux.conf:
-#-------------------------
-"Boot with defaults" "cryptdevice=/dev/disk/by-uuid/<uuid>:cryptroot zfs=zroot/ROOT/default rw resume=UUID=<swap UUID>"
+title   Arch Linux
+linux   /vmlinuz-linux
+initrd  /initramfs-linux.img
+options zfs=zroot/ROOT/default rw
 ```
 
 Set `/etc/hostname` and `/etc/hosts`:
@@ -239,12 +260,28 @@ systemctl enable NetworkManager
 Exit chroot, copy zpool, unmount and export!
 ```
 exit
-cp /etc/zfs/zpool.cache /mnt/etc/zfs
 umount /mnt/boot
+zfs umount -a
 zpool export zroot
 ```
+#### Reboot, some minor fixes to ensure future boots go ok:
+```
+zpool set cachefile=/etc/zfs/zpool.cache zroot
+systemctl enable zfs.target
+systemctl enable zfs-import-cache
+systemctl enable zfs-mount
+systemctl enable zfs-import.target
+```
+Generate hostid:
+```
+zgenhostid $(hostid)
+```
+Regenerate initramfs now that system will properly remember its host ID:
+```
+mkinitcpio -p linux
+```
 
-#### Reboot! Now its customize to taste (including display server/wm etc)
+#### Now its customize to taste (including display server/wm etc)
 Lets create out personal account:
 ```
 useradd -m -g users -G audio,video,network,wheel,storage,rfkill,docker -s /bin/bash my_username
