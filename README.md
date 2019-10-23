@@ -100,27 +100,6 @@ Now, format EFI partition we just created:
 ```
 mkfs.fat -F32 /dev/sda1
 ```
-LUK'in those crypts:
-```
-cryptsetup luksFormat /dev/sda2
-cryptsetup luksOpen /dev/sda2 cryptroot
-```
-With our luks encrypted partition open, lets repartition for our system on ZFS,
-If on laptop and hibernation is wanted (in this case, yes); then we'll make two
-partitions... first, is 8GB to match my laptops RAM, then rest of disk for our system:
-```
-parted /dev/mapper/cryptroot
-(parted) mklabel gpt
-(parted) mkpart ext2 0% 8GB
-(parted) mkpart ext2 8GB 100%
-(parted) quit
-```
-Finish setting up first partition as swap:
-```
-mkswap /dev/mapper/cryptroot1
-swapon /dev/mapper/cryptroot1
-```
-
 #### Setting up ZFS
 Create the `zpool.cache` file, this resides within the live env:
 ```
@@ -128,21 +107,22 @@ touch /etc/zfs/zpool.cache
 ```
 Create the pool:
 ```
-zpool create -o cachefile=/etc/zfs/zpool.cache -m none -R /mnt zroot /dev/mapper/cryptroot2
+zpool create -o cachefile=/etc/zfs/zpool.cache -m none -R /mnt zroot /dev/disk/by-id/<id>
 ```
 Now we can create the ZFS filesystems in the new pool:
 ```
-zfs create -o mountpoint=none -o compression=lz4 zroot/ROOT
-zfs create -o mountpoint=/ zroot/ROOT/default
-zfs create -o mountpoint=/opt zroot/opt
-zfs create -o mountpoint=/home zroot/home
-zfs create -o mountpoint=/root zroot/home/root
+zfs create -o encryption=on -o keyformat=passphrase -o mountpoint=none -o compression=lz4 zroot/encr
+zfs create -o mountpoint=none -o compression=lz4 zroot/encr/ROOT
+zfs create -o mountpoint=/ zroot/encr/ROOT/default
+zfs create -o mountpoint=/opt zroot/encr/opt
+zfs create -o mountpoint=/home zroot/encr/home
+zfs create -o mountpoint=/root zroot/encr/home/root
 zpool set bootfs=zroot zroot
 ```
 Export/import dance:
 ```
 zpool export zroot
-zpool import -R /mnt zroot
+zpool import -R /mnt -l zroot
 ```
 
 Now, run `blkid /dev/sda1` and grab the `UUID` for below mount command:
@@ -154,7 +134,6 @@ Install base system and generate fstab entries:
 ```
 pacstrap -i /mnt base base-devel vim
 genfstab -U -p /mnt | grep boot >> /mnt/etc/fstab
-genfstab -U -p /mnt | grep swap >> /mnt/etc/fstab
 ```
 
 #### Chroot in, wrap up install
@@ -201,32 +180,10 @@ systemctl enable zfs-import-cache
 systemctl enable zfs-mount
 systemctl enable zfs-import.target
 ```
-#### Bootup hook for ZFS:
-Create `/etc/initcpio/install/load_part`:
-```
-#!/bin/bash
-
-build() {
-        add_binary 'partprobe'
-
-        add_runscript
-}
-
-help() {
-        cat <<HELPEOF
-Probes mapped LUKS container for partitions.
-HELPEOF
-}
-```
-Create `/etc/initcpio/hooks/load_part`:
-```
-run_hook() {
-        partprobe /dev/mapper/cryptroot
-}
-```
+#### Add hooks and regenerate mkinitcpio:
 Edit `/etc/mkinitcpio.conf`, edit line with `HOOKS=` to match:
 ```
-HOOKS="base udev autodetect modconf block keyboard encrypt load_part resume zfs filesystems"
+HOOKS="base udev autodetect modconf block keyboard zfs filesystems"
 ```
 Create boot image:
 ```
@@ -234,20 +191,19 @@ mkinitcpio -p linux
 ```
 
 #### Home Stretch
-For bootloader, rEFInd will be used:
+For bootloader, systemd-boot (gummiboot) will be used:
 ```
-pacman -S refind-efi
-refind-install
+bootctl --path=/boot install
 ```
-Now, for this next part.. we'll need to gather some info..
-1. `blkid /dev/sda2` grab `UUID` for cryptdevice
-2. `blkid /dev/mapper/cryptroot1` grab `UUID` for resume
+Next, entry for the bootloader for our Arch install:
+```
+$ vim /boot/loader/entries/arch.conf
 
-With that info we can now edit `/boot/refind_linux.conf`:
-```
-# /boot/refind_linux.conf:
-#-------------------------
-"Boot with defaults" "cryptdevice=/dev/disk/by-uuid/<uuid>:cryptroot zfs=zroot/ROOT/default rw resume=UUID=<swap UUID>"
+# add the following
+title     Arch Linux
+linux     /vmlinuz-linux
+initrd    /initramfs-linux.img
+options   zfs=zroot/encr/ROOT/default rw
 ```
 
 Set `/etc/hostname` and `/etc/hosts`:
@@ -313,4 +269,9 @@ sudo pacman -S i3 lxappearance nitrogen py3status terminator rsync copyq volumei
 git clone https://aur.archlinux.org/yay.git
 cd yay
 makepkg -si
+```
+Reboot, and generate the hostid for future reboots:
+```
+zgenhostid $(hostid)
+mkinitcpio -p linux
 ```
