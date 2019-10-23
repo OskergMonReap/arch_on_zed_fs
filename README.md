@@ -107,7 +107,7 @@ touch /etc/zfs/zpool.cache
 ```
 Create the pool:
 ```
-zpool create -o cachefile=/etc/zfs/zpool.cache -m none -R /mnt zroot /dev/disk/by-id/<id>
+zpool create -o cachefile=/etc/zfs/zpool.cache -m none zroot /dev/disk/by-id/<id>
 ```
 Now we can create the ZFS filesystems in the new pool:
 ```
