@@ -178,7 +178,7 @@ hwclock -w
 ```
 PACKAGE FREE FOR ALL!!!!! Meaning, just install w/e else you want here:
 ```
-pacman -S rsync iw dialog wpa_supplicant dhcp bash-completion wifi-menu reflector
+pacman -S rsync iw dialog wpa_supplicant dhcp bash-completion reflector
 ```
 
 #### Finishing Touches
@@ -275,7 +275,13 @@ umount /mnt/boot
 zpool export zroot
 ```
 
-#### Reboot! Now its customize to taste (including display server/wm etc)
+#### Reboot! One small order of business then customize to taste (including display server/wm etc)
+We need to generate the hostid and set the cachefile for the zpool:
+```
+zgenhostid $(hostid)
+zpool set cachefile=/etc/zfs/zpool.cache zroot
+```
+
 Lets create out personal account:
 ```
 useradd -m -g users -G audio,video,network,wheel,storage,rfkill -s /bin/bash my_username
@@ -307,10 +313,36 @@ sudo systemctl enable lightdm.service
 Finally, installing my window manager of choice as my desktop environment.. i3.
 Also tacking on several other apps of choice:
 ```
-sudo pacman -S i3 lxappearance nitrogen py3status terminator rsync copyq volumeicon git
+sudo pacman -S i3 lxappearance nitrogen py3status terminator rsync copyq volumeicon \
+               git python-pip noto-fonts ttf-font-awesome jmtpfs newsboat
 
 # Install aur helper
 git clone https://aur.archlinux.org/yay.git
 cd yay
 makepkg -si
 ```
+
+---
+- - -
+- - -
+# TROUBLESHOOTING
+If for whatever reason you find yourself not able to boot... follow these steps to get back into your system from liveusb
+```
+cryptsetup luksOpen /dev/sda2 cryptroot
+partprobe /dev/mapper/cryptroot
+swapon /dev/mapper/cryptroot1
+zpool import -R /mnt zroot
+mount /dev/sda1 /mnt/boot
+arch-chroot /mnt /bin/bash
+```
+Typically, cachefile is missing/corrupt.. after above steps to chroot, run following:
+```
+zpool set cachefile=/etc/zfs/zpool.cache zroot
+```
+When done poking around, exit like so:
+```
+exit
+umount /mnt/boot
+zpool export zroot
+```
+Reboot, removing the liveusb/media in the process.. enjoy
