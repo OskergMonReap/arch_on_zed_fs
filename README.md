@@ -232,6 +232,13 @@ zpool export zroot
 ```
 
 #### Reboot! Now its customize to taste (including display server/wm etc)
+First, business...
+```
+zgenhostid $(hostid)
+zpool set cachefile=/etc/zfs/zpool.cache zroot
+mkinitcpio -p linux
+```
+
 Lets create out personal account:
 ```
 useradd -m -g users -G audio,video,network,wheel,storage,rfkill -s /bin/bash my_username
@@ -269,9 +276,4 @@ sudo pacman -S i3 lxappearance nitrogen py3status terminator rsync copyq volumei
 git clone https://aur.archlinux.org/yay.git
 cd yay
 makepkg -si
-```
-Reboot, and generate the hostid for future reboots:
-```
-zgenhostid $(hostid)
-mkinitcpio -p linux
 ```
