@@ -2,7 +2,6 @@
 Living document outlining base installation for home/work PCs, encrypted with `/` on ZFS
 - - -
 **TO-DO**:
-- *refactor into shell scripts for automation, likely one for zsh shell of live env and one for user customizations after reboot*
 - *implement CI/CD to pre-build Arch ISO, serve from S3*
 - - -
 ### PART 1
@@ -85,8 +84,9 @@ This will build the image and automatically place it in the `out/` directory we 
 ## PART 2
 ### The Installation
 #### Partitioning, Encrypting and Partitioning (again)..
-Assuming all went well in creating our custom ISO, boot into the image and get networking up (if no ethernet, `wifi-menu` it up), then lets partition that disk:
+Assuming all went well in creating our custom ISO, boot into the image and get networking up (if no ethernet, `wifi-menu` it up), set system time, then lets partition that disk:
 ```
+timedatectl set-ntp true
 parted /dev/sda
 (parted) mklabel gpt
 (parted) mkpart ESP fat32 1MiB 513MiB
@@ -176,7 +176,7 @@ pacman -S ntp
 ntpd -q
 hwclock -w
 ```
-PACKAGE FREE FOR ALL!!!!! Meaning, just install w/e else you want here:
+Install some packages to assist in finishing installation later:
 ```
 pacman -S rsync iw dialog wpa_supplicant dhcp bash-completion reflector
 ```
