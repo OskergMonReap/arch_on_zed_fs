@@ -1,8 +1,6 @@
 # Arch Linux install on ZFS
 Living document outlining base installation for home/work PCs, encrypted with `/` on ZFS
-- - -
-**TO-DO**:
-- *implement CI/CD to pre-build Arch ISO, serve from S3*
+
 - - -
 ### PART 1
 #### Bake our own ISO with ZFS in tow
@@ -313,8 +311,8 @@ sudo systemctl enable lightdm.service
 Finally, installing my window manager of choice as my desktop environment.. i3.
 Also tacking on several other apps of choice:
 ```
-sudo pacman -S i3 lxappearance nitrogen py3status terminator rsync copyq volumeicon \
-               git python-pip noto-fonts ttf-font-awesome jmtpfs newsboat
+sudo pacman -S i3 lxappearance nitrogen py3status terminology rsync copyq volumeicon \
+               git python-pip noto-fonts ttf-font-awesome newsboat
 
 # Install aur helper
 git clone https://aur.archlinux.org/yay.git
