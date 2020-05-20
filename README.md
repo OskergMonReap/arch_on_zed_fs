@@ -133,6 +133,7 @@ Now we can create the ZFS filesystems in the new pool:
 zfs create -o mountpoint=none -o compression=lz4 zroot/ROOT
 zfs create -o mountpoint=/ zroot/ROOT/default
 zfs create -o mountpoint=/opt zroot/opt
+zfs create -o mountpoint=/var zroot/var
 zfs create -o mountpoint=/home zroot/home
 zfs create -o mountpoint=/root zroot/home/root
 zpool set bootfs=zroot zroot
@@ -162,7 +163,7 @@ arch-chroot /mnt /bin/bash
 ```
 First, setup locale by uncommenting UTF-8 US option in `/etc/locale.gen` then run
 ```
-echo en_US.UTF-8 >> /etc/locale.gen
+echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
 locale-gen
 ```
 Now lets take care of several other initial setup tasks:
