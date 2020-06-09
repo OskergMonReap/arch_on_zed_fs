@@ -76,13 +76,13 @@ cd /tmp/Build
 mkdir out
 ./build.sh -v
 ```
-This will build the image and automatically place it in the `out/` directory we just created!
+This will build the image and automatically place it in the `out/` directory we just created.
 
 - - -
 ## PART 2
 ### The Installation
 #### Partitioning, Encrypting and Partitioning (again)..
-Assuming all went well in creating our custom ISO, boot into the image and get networking up (if no ethernet, `wifi-menu` it up), set system time, then lets partition that disk:
+Assuming all went well in creating our custom ISO, boot into the image and get networking up (if no ethernet, `wifi-menu` it up), set system time, then partition the disk:
 ```
 timedatectl set-ntp true
 parted /dev/sda
