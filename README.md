@@ -201,6 +201,8 @@ systemctl enable zfs-mount
 systemctl enable zfs-import.target
 ```
 #### Bootup hook for ZFS:
+Since we did full disk encryption, and then placed `/` on ZFS, we need a way for the OS to be able to see the partitions in order for our cachefile to succesfully find and mount our ZFS filesystem. We will solve this problem by adding a boot hook that will run `partprobe` after the encrypted partition is opened.
+
 Create `/etc/initcpio/install/load_part`:
 ```
 #!/bin/bash
