@@ -4,7 +4,7 @@ Living document outlining base installation for home/work PCs, encrypted with `/
 - - -
 ### PART 1
 #### Bake our own ISO with ZFS in tow
-From our existing Arch system, we'll start by pulling down the `archiso` package.
+From our existing Arch system, or liveUSB, we'll start by pulling down the `archiso` package.
 To avoid issues, all `archiso` steps are to be ran as root:
 ```
 pacman -S archiso
@@ -46,7 +46,7 @@ Build
 #### Archiso File Structure Summary
 - `airootfs`
     - translates to `/` on final image
-    - all files/folders wanted should be copied here
+    - all files/folders wanted should be created/copied here
 - `packages.{both,i686,x86_64}`
     - list any packages you want installed here
 - `pacman.conf`
@@ -94,7 +94,7 @@ parted /dev/sda
 (parted) align-check optimal 2
 (parted) quit
 ```
-Now, format EFI partition we just created:
+Now, format the EFI partition we just created:
 ```
 mkfs.fat -F32 /dev/sda1
 ```
@@ -283,7 +283,7 @@ zgenhostid $(hostid)
 zpool set cachefile=/etc/zfs/zpool.cache zroot
 ```
 
-Lets create out personal account:
+Lets create our personal account:
 ```
 useradd -m -g users -G audio,video,network,wheel,storage,rfkill -s /bin/bash my_username
 passwd my_username
@@ -346,4 +346,4 @@ exit
 umount /mnt/boot
 zpool export zroot
 ```
-Reboot, removing the liveusb/media in the process.. enjoy
+Reboot, removing the liveUSB/media in the process.. enjoy
