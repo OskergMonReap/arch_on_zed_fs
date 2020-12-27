@@ -5,7 +5,7 @@ Living document outlining base installation for home/work PCs, encrypted with `/
 ### PART 1
 #### Bake our own ISO with ZFS in tow
 From our existing Arch system, or liveUSB, we'll start by pulling down the `archiso` package.
-To avoid issues, all `archiso` steps are to be ran as root:
+To avoid issues, all `archiso` steps are to be run as **root**:
 ```
 pacman -S archiso
 ```
@@ -46,7 +46,7 @@ Build
 #### Archiso File Structure Summary
 - `airootfs`
     - translates to `/` on final image
-    - all files/folders wanted should be created/copied here
+    - all files/folders wanted should be copied/created here
 - `packages.{both,i686,x86_64}`
     - list any packages you want installed here
 - `pacman.conf`
@@ -103,8 +103,8 @@ LUK'in those crypts:
 cryptsetup luksFormat /dev/sda2
 cryptsetup luksOpen /dev/sda2 cryptroot
 ```
-With our luks encrypted partition open, lets repartition for our system on ZFS,
-If on laptop and hibernation is wanted (in this case, yes); then we'll make two
+With our luks encrypted partition open, lets re-partition for our system on ZFS,
+If on a laptop and hibernation is wanted (in this case, yes); then we'll make two
 partitions... first, is 8GB to match my laptops RAM, then rest of disk for our system:
 ```
 parted /dev/mapper/cryptroot
@@ -138,6 +138,11 @@ zfs create -o mountpoint=/home zroot/home
 zfs create -o mountpoint=/root zroot/home/root
 zpool set bootfs=zroot zroot
 ```
+>*Note*:
+> One of the main benefits of ZFS that causes me to use it on my personal devices is the capability of snapshots, enabling point-in-time backups
+> With this in mind, these snapshots are stored on the respective block device, and space will remain consumed if a snapshot contains a deleted file. If you have directories, for example `/var/log` or a directory for your Steam games, be sure to make them within their own ZFS file system (*ie* `zfs create...`), so we can then mark those directories with the `no-snapshot` flag
+
+
 Export/import dance:
 ```
 zpool export zroot
@@ -157,7 +162,7 @@ genfstab -U -p /mnt | grep swap >> /mnt/etc/fstab
 ```
 
 #### Chroot in, wrap up install
-First, chroot on in so we can interact with our new system:
+First, chroot on in, so we can interact with our new system:
 ```
 arch-chroot /mnt /bin/bash
 ```
@@ -186,7 +191,7 @@ Edit `/etc/pacman.conf` and place `[archzfs]` above other repos and uncomment mu
 [archzfs]
 Server = http://archzfs.com/$repo/x86_64
 ```
-Both the db and packages are signed, so add key to pacman's trusted key list:
+Both the db and packages are signed, so add the key to pacman's trusted key list:
 ```
 pacman-key -r F75D9D76
 pacman-key --lsign-key F75D9D76
@@ -201,7 +206,7 @@ systemctl enable zfs-mount
 systemctl enable zfs-import.target
 ```
 #### Bootup hook for ZFS:
-Since we did full disk encryption, and then placed `/` on ZFS, we need a way for the OS to be able to see the partitions in order for our cachefile to succesfully find and mount our ZFS filesystem. We will solve this problem by adding a boot hook that will run `partprobe` after the encrypted partition is opened.
+Since we did full disk encryption, and then placed `/` on ZFS, we need a way for the OS to be able to see the partitions in order for our cachefile to successfully find and mount our ZFS filesystem. We will solve this problem by adding a boot hook that will run `partprobe` after the encrypted partition is opened.
 
 Create `/etc/initcpio/install/load_part`:
 ```
@@ -283,7 +288,7 @@ zgenhostid $(hostid)
 zpool set cachefile=/etc/zfs/zpool.cache zroot
 ```
 
-Lets create our personal account:
+Let's create our personal account:
 ```
 useradd -m -g users -G audio,video,network,wheel,storage,rfkill -s /bin/bash my_username
 passwd my_username
@@ -296,10 +301,10 @@ and uncomment the line with:
 ```
 %wheel ALL=(ALL) ALL
 ```
-Logout and log backin to test our new account, run `exit` and log backin with user creds
+Logout and log back in to test our new account, run `exit` and log back in with user credentials
 Test privileges, run `sudo pacman -Syu`, if it worked after entering password we're good here!
 - - -
-#### Gettin Graphical
+#### Gettin' Graphical
 Lets install our display server:
 ```
 sudo pacman -S xorg-server xorg-apps xorg-xinit xterm x86-video-intel
@@ -327,7 +332,7 @@ makepkg -si
 - - -
 - - -
 # TROUBLESHOOTING
-If for whatever reason you find yourself not able to boot... follow these steps to get back into your system from liveusb
+If for whatever reason you find yourself not able to boot... follow these steps to get back into your system from liveUSB
 ```
 cryptsetup luksOpen /dev/sda2 cryptroot
 partprobe /dev/mapper/cryptroot
