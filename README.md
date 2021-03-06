@@ -28,14 +28,11 @@ Build
 │   └── root
 │       ├── customize_airootfs.sh
 │       └── install.txt
-├── build.sh # Used to build ISO
 | # Customizable files:
-├── packages.both
-├── packages.i686
 ├── packages.x86_64
 ├── pacman.conf
 | # Other files and directories
-├── mkinitcpio.conf
+├── profiledef.sh
 ├── efiboot
 │   └── # bootloader files...
 ├── isolinux
@@ -47,7 +44,7 @@ Build
 - `airootfs`
     - translates to `/` on final image
     - all files/folders wanted should be copied/created here
-- `packages.{both,i686,x86_64}`
+- `packages.x86_64`
     - list any packages you want installed here
 - `pacman.conf`
     - the package manager configuration file
@@ -74,7 +71,7 @@ I tend to reuse these Build directories, so per some other great posts online I 
 cp -r ~/Build/ /tmp
 cd /tmp/Build
 mkdir out
-./build.sh -v
+mkarchiso -v -o out/ .
 ```
 This will build the image and automatically place it in the `out/` directory we just created.
 
