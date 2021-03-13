@@ -56,8 +56,7 @@ Add ZFS repository to the `pacman.conf` file, above all other repo's add `[archz
 # /etc/pacman.conf
 #
 [archzfs]
-SigLevel = Optional TrustAll
-Server = http://archzfs.com/$repo/x86_64
+Server = https://archzfs.com/$repo/$arch
 ```
 Add ZFS package, optionally `linux-headers`, to bottom of our `packages.x86_64` file:
 ```
