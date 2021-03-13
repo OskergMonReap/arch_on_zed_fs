@@ -25,9 +25,10 @@ Build
 │   ├── etc
 │   │   ├── # configuration files...
 │   │   └── # ...
-│   └── root
-│       ├── customize_airootfs.sh
-│       └── install.txt
+│   ├── root
+│   │   ├── customize_airootfs.sh
+│   │   └── install.txt
+│   └── usr
 | # Customizable files:
 ├── packages.x86_64
 ├── pacman.conf
@@ -35,8 +36,6 @@ Build
 ├── profiledef.sh
 ├── efiboot
 │   └── # bootloader files...
-├── isolinux
-│   └── isolinux.cfg
 └── syslinux
     └── # syslinux files...
 ```
@@ -60,9 +59,10 @@ Add ZFS repository to the `pacman.conf` file, above all other repo's add `[archz
 SigLevel = Optional TrustAll
 Server = http://archzfs.com/$repo/x86_64
 ```
-Add ZFS package to bottom of our desired `packages` file, `packages.x86_64` in my case:
+Add ZFS package, optionally `linux-headers`, to bottom of our `packages.x86_64` file:
 ```
-zfs-linux
+linux-headers
+archzfs-linux
 ```
 
 #### Build the image
@@ -71,7 +71,7 @@ I tend to reuse these Build directories, so per some other great posts online I 
 cp -r ~/Build /tmp
 cd /tmp/Build
 mkdir out
-mkarchiso -v /tmp/Build/
+mkarchiso -v -w /tmp/archiso-tmp /tmp/Build/
 ```
 This will build the image and automatically place it in the `out/` directory we just created.
 
