@@ -68,10 +68,10 @@ zfs-linux
 #### Build the image
 I tend to reuse these Build directories, so per some other great posts online I will also ship this to my `/tmp` directory to be finally built.. keeping the original clean/in-tact:
 ```
-cp -r ~/Build/ /tmp
+cp -r ~/Build /tmp
 cd /tmp/Build
 mkdir out
-mkarchiso -v -o out/ .
+mkarchiso -v /tmp/Build/
 ```
 This will build the image and automatically place it in the `out/` directory we just created.
 
