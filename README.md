@@ -50,15 +50,18 @@ Build
     - list additional repo's here
 
 #### Customizations
-Add ZFS repository to the `pacman.conf` file, above all other repo's add `[archzfs]`:
+Add ZFS repository to the `pacman.conf` file, add `[archzfs]` as follows:
 ```
 #
 # /etc/pacman.conf
 #
 [archzfs]
+# Mirror - US
+Server = https://zxcvfdsa.com/archzfs/$repo/$arch
+# Origin Server - France
 Server = https://archzfs.com/$repo/$arch
 ```
-Add ZFS package, optionally `linux-headers`, to bottom of our `packages.x86_64` file:
+Add ZFS package, and `linux-headers`, to bottom of our `packages.x86_64` file:
 ```
 linux-headers
 archzfs-linux
