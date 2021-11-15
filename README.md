@@ -134,12 +134,16 @@ zfs create -o mountpoint=/ zroot/ROOT/default
 zfs create -o mountpoint=/opt zroot/opt
 zfs create -o mountpoint=/var zroot/var
 zfs create -o mountpoint=/home zroot/home
+zfs create -o mountpoint=/games zroot/games
 zfs create -o mountpoint=/root zroot/home/root
 zpool set bootfs=zroot zroot
 ```
 >*Note*:
 > One of the main benefits of ZFS that causes me to use it on my personal devices is the capability of snapshots, enabling point-in-time backups
-> With this in mind, these snapshots are stored on the respective block device, and space will remain consumed if a snapshot contains a deleted file. If you have directories, for example `/var/log` or a directory for your Steam games, be sure to make them within their own ZFS file system (*ie* `zfs create...`), so we can then mark those directories with the `no-snapshot` flag
+
+> With this in mind, these snapshots are stored on the respective block device, and space will remain consumed if a snapshot contains a deleted file. If you have directories, for example `/var/log` or a directory for your Steam games, be sure to make them within their own ZFS file system (*ie* `zfs create...`), so we can then mark those directories with the `no-snapshot` flag:
+
+> `zfs set com.sun:auto-snapshot=false zroot/games`
 
 
 Export/import dance:
