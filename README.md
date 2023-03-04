@@ -267,7 +267,7 @@ and then enter the following into `/etc/hosts`:
 ```
 127.0.0.1   localhost
 ::1         localhost
-127.0.1.1   archez.reapnet      archez
+127.0.1.1   archez.<your-local-domain>      archez
 ```
 
 Set root password, make networking simple upon next boot:
@@ -293,8 +293,8 @@ zpool set cachefile=/etc/zfs/zpool.cache zroot
 
 Let's create our personal account:
 ```
-useradd -m -g users -G audio,video,network,wheel,storage,rfkill -s /bin/bash my_username
-passwd my_username
+useradd -m -g users -G audio,video,network,wheel,storage,rfkill -s /bin/bash <your-username>
+passwd <your-username>
 ```
 Since we want our user to have admin privileges via sudo, we need to run the below command:
 ```
@@ -322,7 +322,7 @@ sudo systemctl enable lightdm.service
 Finally, installing my window manager of choice as my desktop environment.. i3.
 Also tacking on several other apps of choice:
 ```
-sudo pacman -S i3 lxappearance nitrogen py3status terminology rsync copyq volumeicon \
+sudo pacman -S i3 lxappearance nitrogen py3status alacritty rsync copyq volumeicon \
                git python-pip noto-fonts ttf-font-awesome newsboat
 
 # Install aur helper
